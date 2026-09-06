@@ -26,7 +26,7 @@ import {
   Volume2,
   XCircle,
 } from 'lucide-react';
-import { feedbackAudio, type FeedbackAudioKind } from './audio-config';
+import { feedbackAudio, mainMusic, type FeedbackAudioKind } from './audio-config';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,7 @@ const TABLES = Array.from({ length: 10 }, (_, index) => index + 1);
 const STORAGE_KEY = 'samimath-progress-v1';
 const AVATAR = '/assets/samira-avatar.png';
 const APP_VERSION = '1.0.0';
+const MAIN_MUSIC_VOLUME = 0.2;
 
 type Language = 'da' | 'en' | 'ru';
 
@@ -291,6 +292,33 @@ const FEEDBACK_FALLBACK: Record<Language, Record<FeedbackKind, string>> = {
 };
 
 let activeFeedbackAudio: HTMLAudioElement | null = null;
+let activeMainMusic: HTMLAudioElement | null = null;
+
+function getMainMusicAudio() {
+  if (!mainMusic.trim()) return null;
+  if (!activeMainMusic) {
+    activeMainMusic = new Audio(mainMusic);
+    activeMainMusic.loop = true;
+  }
+  activeMainMusic.volume = MAIN_MUSIC_VOLUME;
+  return activeMainMusic;
+}
+
+async function playMainMusic() {
+  const audio = getMainMusicAudio();
+  if (!audio) return false;
+
+  try {
+    await audio.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pauseMainMusic() {
+  activeMainMusic?.pause();
+}
 
 function spokenNumber(language: Language, value: number) {
   if (language === 'en') return englishNumber(value);
@@ -805,6 +833,38 @@ export default function HomePage() {
     document.documentElement.classList.toggle('dark', saved.settings.dark);
     document.documentElement.lang = saved.settings.language;
   }, [currentSession, hydrated, saved]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!saved.settings.music) {
+      pauseMainMusic();
+      return;
+    }
+
+    let cancelled = false;
+    const resumeMusic = () => {
+      playMainMusic().then((started) => {
+        if (!cancelled && started) removeResumeListeners();
+      });
+    };
+    const removeResumeListeners = () => {
+      document.removeEventListener('click', resumeMusic);
+      document.removeEventListener('keydown', resumeMusic);
+      document.removeEventListener('pointerdown', resumeMusic);
+      document.removeEventListener('touchstart', resumeMusic);
+    };
+
+    resumeMusic();
+    document.addEventListener('click', resumeMusic);
+    document.addEventListener('keydown', resumeMusic);
+    document.addEventListener('pointerdown', resumeMusic);
+    document.addEventListener('touchstart', resumeMusic, { passive: true });
+
+    return () => {
+      cancelled = true;
+      removeResumeListeners();
+    };
+  }, [hydrated, saved.settings.music]);
 
   useEffect(() => {
     if (screen !== 'splash') return;

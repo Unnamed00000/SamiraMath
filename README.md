@@ -43,3 +43,9 @@ Current events:
 - `perfect10` for ten correct answers in a row.
 
 Until those URLs are added, the app uses browser speech synthesis as a fallback.
+
+## Main Music
+
+The background music is also configured in `src/audio-config.ts`.
+
+It starts at 20% volume when the music setting is enabled.

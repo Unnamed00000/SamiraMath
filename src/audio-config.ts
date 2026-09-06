@@ -8,6 +8,9 @@ export type FeedbackAudioKind =
 const AUDIO_BASE =
   'https://raw.githubusercontent.com/Unnamed00000/SamiraMath/main/public/audio';
 
+export const mainMusic =
+  `${AUDIO_BASE}/Main%20Islamic%20Songs%20For%20Kids.mp3`;
+
 export const feedbackAudio: Record<FeedbackAudioKind, string> = {
   wrong: `${AUDIO_BASE}/Det%20var%20et%20godt%20fors%C3%B8g!%20Pr%C3%B8v%20%C3%A9n%20gang%20til%20%E2%80%93%20jeg%20ved,%20du%20kan.mp3`,
   perfect10: `${AUDIO_BASE}/Enest%C3%A5ende!%20Ti%20ud%20af%20ti!%20Det%20var%20helt%20fantastisk,%20Samira!.mp3`,
