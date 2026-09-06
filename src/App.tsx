@@ -320,6 +320,14 @@ function pauseMainMusic() {
   activeMainMusic?.pause();
 }
 
+function stopFeedbackAudio() {
+  window.speechSynthesis?.cancel();
+  if (!activeFeedbackAudio) return;
+  activeFeedbackAudio.pause();
+  activeFeedbackAudio.currentTime = 0;
+  activeFeedbackAudio = null;
+}
+
 function spokenNumber(language: Language, value: number) {
   if (language === 'en') return englishNumber(value);
   if (language === 'ru') return russianNumber(value);
@@ -955,12 +963,14 @@ export default function HomePage() {
   );
 
   const goBack = () => {
+    stopFeedbackAudio();
     if (screen === 'learn-table') setScreen('learn-select');
     else if (screen === 'train') setScreen('train-select');
     else setScreen('home');
   };
 
   const startQuiz = (mode: Mode, table: number | null) => {
+    stopFeedbackAudio();
     const nextQuestions = makeQuestions(mode, table);
     setActiveMode(mode);
     setQuestions(nextQuestions);
@@ -1020,7 +1030,8 @@ export default function HomePage() {
     }
   };
 
-  const moveNext = (records = answers) => {
+  const moveNext = (records = answers, stopAudio = true) => {
+    if (stopAudio) stopFeedbackAudio();
     if (index >= questions.length - 1) {
       finishQuiz(records, activeMode, activeMode === 'train' ? selectedTable : null);
       return;
@@ -1090,7 +1101,7 @@ export default function HomePage() {
     }
     setAnswers(nextRecords);
     if (index >= questions.length - 1) finishQuiz(nextRecords, 'test', null);
-    else moveNext(nextRecords);
+    else moveNext(nextRecords, false);
   };
 
   const resetProgress = () => {

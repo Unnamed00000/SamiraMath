@@ -49,3 +49,7 @@ Until those URLs are added, the app uses browser speech synthesis as a fallback.
 The background music is also configured in `src/audio-config.ts`.
 
 It starts at 20% volume when the music setting is enabled.
+
+## PWA
+
+SamiMath includes a web app manifest and service worker, so it can be installed from supported browsers on Android, iPhone, tablets, Chromebooks, and desktop.
