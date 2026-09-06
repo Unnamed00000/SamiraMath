@@ -44,6 +44,7 @@ const STORAGE_KEY = 'samimath-progress-v1';
 const AVATAR = '/assets/samira-avatar.png';
 const APP_VERSION = '1.0.0';
 const MAIN_MUSIC_VOLUME = 0.2;
+const MAIN_MUSIC_REPEAT_STARTS = [0.1, 0.5, 0.7, 0];
 
 type Language = 'da' | 'en' | 'ru';
 
@@ -293,12 +294,34 @@ const FEEDBACK_FALLBACK: Record<Language, Record<FeedbackKind, string>> = {
 
 let activeFeedbackAudio: HTMLAudioElement | null = null;
 let activeMainMusic: HTMLAudioElement | null = null;
+let mainMusicRepeatIndex = 0;
+
+function jumpMainMusicForRepeat(audio: HTMLAudioElement) {
+  const duration = audio.duration;
+  const percent =
+    MAIN_MUSIC_REPEAT_STARTS[
+      mainMusicRepeatIndex % MAIN_MUSIC_REPEAT_STARTS.length
+    ];
+  mainMusicRepeatIndex += 1;
+
+  if (Number.isFinite(duration) && duration > 0) {
+    audio.currentTime = Math.max(0, Math.min(duration - 1, duration * percent));
+  } else {
+    audio.currentTime = 0;
+  }
+}
 
 function getMainMusicAudio() {
   if (!mainMusic.trim()) return null;
   if (!activeMainMusic) {
     activeMainMusic = new Audio(mainMusic);
-    activeMainMusic.loop = true;
+    activeMainMusic.loop = false;
+    activeMainMusic.addEventListener('ended', () => {
+      const audio = activeMainMusic;
+      if (!audio) return;
+      jumpMainMusicForRepeat(audio);
+      audio.play().catch(() => undefined);
+    });
   }
   activeMainMusic.volume = MAIN_MUSIC_VOLUME;
   return activeMainMusic;
