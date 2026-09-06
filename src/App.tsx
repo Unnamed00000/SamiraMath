@@ -1070,21 +1070,24 @@ export default function HomePage() {
   const submitTestAnswer = () => {
     if (!currentQuestion || !testValue) return;
     const numericValue = Number(testValue);
+    const correct = numericValue === currentQuestion.answer;
     const nextRecords = [
       ...answers,
       {
         question: currentQuestion,
-        correct: numericValue === currentQuestion.answer,
-        firstTry: numericValue === currentQuestion.answer,
+        correct,
+        firstTry: correct,
         value: numericValue,
       },
     ];
-    playFeedback(
-      numericValue === currentQuestion.answer
-        ? correctFeedbackFor(nextRecords)
-        : 'wrong',
-      saved.settings,
-    );
+    const finishedPerfectRound =
+      index >= questions.length - 1 &&
+      nextRecords.length === 10 &&
+      nextRecords.every((record) => record.correct);
+
+    if (!finishedPerfectRound) {
+      playFeedback(correct ? correctFeedbackFor(nextRecords) : 'wrong', saved.settings);
+    }
     setAnswers(nextRecords);
     if (index >= questions.length - 1) finishQuiz(nextRecords, 'test', null);
     else moveNext(nextRecords);
