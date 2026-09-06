@@ -1,6 +1,6 @@
 # SamiMath
 
-SamiMath is a small multiplication learning app made for Samira.
+Math app for Samira. SamiMath is a small multiplication learning app made with love for Samira.
 
 Primary language: Danish. Extra languages: English and Russian.
 
