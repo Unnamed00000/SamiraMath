@@ -542,7 +542,6 @@ function getCorrectStreak(records: AnswerRecord[]) {
 
 function correctFeedbackFor(records: AnswerRecord[]): FeedbackKind {
   const streak = getCorrectStreak(records);
-  if (streak === 10) return 'perfect10';
   if (streak === 6) return 'streak6';
   if (streak === 3) return 'streak3';
   return 'correct';
@@ -1016,6 +1015,9 @@ export default function HomePage() {
     saveResult(nextResult);
     setFeedback(null);
     setScreen('result');
+    if (score === records.length && records.length === 10) {
+      playFeedback('perfect10', saved.settings);
+    }
   };
 
   const moveNext = (records = answers) => {
