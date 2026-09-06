@@ -26,7 +26,7 @@ import {
   Volume2,
   XCircle,
 } from 'lucide-react';
-import { feedbackAudio } from './audio-config';
+import { feedbackAudio, type FeedbackAudioKind } from './audio-config';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -264,22 +264,33 @@ const TEXT = {
 
 type Copy = (typeof TEXT)[Language];
 
-type FeedbackKind = 'correct' | 'wrong';
+type FeedbackKind = FeedbackAudioKind;
 
 const FEEDBACK_FALLBACK: Record<Language, Record<FeedbackKind, string>> = {
   da: {
-    correct: 'Godt klaret, Samira. Godt.',
-    wrong: 'Prøv igen, Samira. Jeg tror på dig. Du kan godt.',
+    correct: 'Flot klaret. Det var helt rigtigt. Du gør det rigtig godt.',
+    wrong: 'Det var et godt forsøg. Prøv en gang til. Jeg ved, du kan.',
+    streak3: 'Imponerende. Tre rigtige i træk.',
+    streak6: 'Suverænt. Seks rigtige i træk. Du er virkelig skarp.',
+    perfect10: 'Enestående. Ti ud af ti. Det var helt fantastisk, Samira.',
   },
   en: {
-    correct: 'Good job, Samira. Well done.',
-    wrong: 'Try again, Samira. I believe in you. You can do it.',
+    correct: 'Well done. That was exactly right. You are doing very well.',
+    wrong: 'That was a good try. Try one more time. I know you can do it.',
+    streak3: 'Impressive. Three correct in a row.',
+    streak6: 'Excellent. Six correct in a row. You are really sharp.',
+    perfect10: 'Outstanding. Ten out of ten. That was fantastic, Samira.',
   },
   ru: {
-    correct: 'Молодец, Самира. Отлично.',
-    wrong: 'Попробуй ещё раз, Самира. Я верю в тебя. Ты сможешь.',
+    correct: 'Отлично. Это правильный ответ. У тебя очень хорошо получается.',
+    wrong: 'Это была хорошая попытка. Попробуй ещё раз. Я знаю, ты сможешь.',
+    streak3: 'Впечатляет. Три правильных ответа подряд.',
+    streak6: 'Супер. Шесть правильных ответов подряд. Ты очень внимательная.',
+    perfect10: 'Невероятно. Десять из десяти. Это было фантастически, Самира.',
   },
 };
+
+let activeFeedbackAudio: HTMLAudioElement | null = null;
 
 function spokenNumber(language: Language, value: number) {
   if (language === 'en') return englishNumber(value);
@@ -427,8 +438,17 @@ function playFeedback(kind: FeedbackKind, settings: SettingsState) {
   }
 
   window.speechSynthesis?.cancel();
+  activeFeedbackAudio?.pause();
+  activeFeedbackAudio = null;
   const audio = new Audio(url);
-  audio.play().catch(() => playFallbackFeedback(kind, settings.language));
+  activeFeedbackAudio = audio;
+  audio.addEventListener('ended', () => {
+    if (activeFeedbackAudio === audio) activeFeedbackAudio = null;
+  });
+  audio.play().catch(() => {
+    if (activeFeedbackAudio === audio) activeFeedbackAudio = null;
+    playFallbackFeedback(kind, settings.language);
+  });
 }
 
 type Screen =
@@ -478,8 +498,27 @@ type Question = {
 type AnswerRecord = {
   question: Question;
   correct: boolean;
+  firstTry?: boolean;
   value: number | null;
 };
+
+function getCorrectStreak(records: AnswerRecord[]) {
+  let streak = 0;
+  for (let index = records.length - 1; index >= 0; index -= 1) {
+    const record = records[index];
+    if (!record.correct || record.firstTry === false) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+function correctFeedbackFor(records: AnswerRecord[]): FeedbackKind {
+  const streak = getCorrectStreak(records);
+  if (streak === 10) return 'perfect10';
+  if (streak === 6) return 'streak6';
+  if (streak === 3) return 'streak3';
+  return 'correct';
+}
 
 type ResultState = {
   mode: Mode;
@@ -934,12 +973,17 @@ export default function HomePage() {
     if (!currentQuestion) return;
     const nextRecords = [
       ...answers,
-      { question: currentQuestion, correct, value },
+      {
+        question: currentQuestion,
+        correct,
+        firstTry: correct && wrongTries === 0,
+        value,
+      },
     ];
     setAnswers(nextRecords);
     if (correct) {
       setFeedback('correct');
-      playFeedback('correct', saved.settings);
+      playFeedback(correctFeedbackFor(nextRecords), saved.settings);
       return;
     }
     setFeedback('revealed');
@@ -969,11 +1013,14 @@ export default function HomePage() {
       {
         question: currentQuestion,
         correct: numericValue === currentQuestion.answer,
+        firstTry: numericValue === currentQuestion.answer,
         value: numericValue,
       },
     ];
     playFeedback(
-      numericValue === currentQuestion.answer ? 'correct' : 'wrong',
+      numericValue === currentQuestion.answer
+        ? correctFeedbackFor(nextRecords)
+        : 'wrong',
       saved.settings,
     );
     setAnswers(nextRecords);

@@ -34,9 +34,12 @@ After uploading the voice files to GitHub, put their raw file URLs in:
 src/audio-config.ts
 ```
 
-Use:
+Current events:
 
 - `correct` for the praise audio after a correct answer.
 - `wrong` for the supportive audio after a wrong answer.
+- `streak3` for three correct answers in a row.
+- `streak6` for six correct answers in a row.
+- `perfect10` for ten correct answers in a row.
 
 Until those URLs are added, the app uses browser speech synthesis as a fallback.
